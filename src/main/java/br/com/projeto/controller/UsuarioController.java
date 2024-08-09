@@ -4,6 +4,9 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -24,9 +27,9 @@ public class UsuarioController {
 	UsuarioRepository ur;
 
 	@PostMapping("/cadastrar")
-	public String cadastrar(@RequestBody Usuario us) {
+	public ResponseEntity cadastrar(@RequestBody Usuario us) {
 		ur.save(us);
-		return "Usuário cadastrado";
+		return ResponseEntity.status(HttpStatus.CREATED).body("Usuário cadastrado");
 	}
 
 	@GetMapping("/listar")
@@ -36,51 +39,69 @@ public class UsuarioController {
 
 	
 	@GetMapping("consultar/{id}")
-	public Optional<Usuario> consultar(@PathVariable Integer id) {
-		return ur.findById(id);
+	public ResponseEntity<?> consultar(@PathVariable Integer id) {
+		return ResponseEntity.status(HttpStatus.ACCEPTED).body("Id encontrado!");
 	}
 	
 	@GetMapping("consultarusuario/{nomeusuario}")
-	public Optional<Usuario> consultarusuario(@PathVariable String nomeusuario){
-		return ur.findByNomeusuario(nomeusuario);
+	public ResponseEntity<?> consultarusuario(@PathVariable String nomeusuario){
+		return ResponseEntity.status(HttpStatus.ACCEPTED).body("Usuário encontrado");
 	}
 
 	@PatchMapping("/alterarfoto/{id}")
-	public String alterarfoto(@PathVariable Integer id, @RequestBody Usuario us) {
+	public ResponseEntity<?> alterarfoto(@PathVariable Integer id, @RequestBody Usuario us) {
 		Optional<Usuario> user = ur.findById(id);
 		if (!user.isPresent()) {
-			return "Não foi possível encontrar o usuário";
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Solicitação inválida");
 		}
 		us.setIdusuario(id);
 		us.setNomeusuario(user.get().getNomeusuario());
 		us.setSenha(user.get().getSenha());
 		us.setDataalteracao(user.get().getDataalteracao());
 		ur.save(us);
-		return "[{msg:'Foto alterada'}]";
+		return ResponseEntity.status(HttpStatus.OK).body("Foto alterada!");
 	}
 	@PatchMapping("/alterarsenha/{id}")
-	public String alterarsenha(@PathVariable Integer id,@RequestBody Usuario us) {
+	public ResponseEntity<?> alterarsenha(@PathVariable Integer id,@RequestBody Usuario us) {
 		Optional<Usuario> user = ur.findById(id);
 		if(!user.isPresent()) {
-			return "[{msg:'Não foi possível encontrar o usuário'}]";
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Solicitação inválida");
 		}
 		us.setIdusuario(id);
 		us.setDataalteracao(user.get().getDataalteracao());
 		us.setFoto(user.get().getFoto());
 		us.setNomeusuario(user.get().getNomeusuario());
 		ur.save(us);
-		return "[{msg:'Senha alterada']}";
+		return ResponseEntity.status(HttpStatus.OK).body("Senha alterada!");
 	}
 	
 	
 	@DeleteMapping("/apagarusuario/{id}")
-	public String apagarusuario(@PathVariable Integer id) {
+	public ResponseEntity<?> apagarusuario(@PathVariable Integer id) {
 		Optional<Usuario> user = ur.findById(id);
 		if(!user.isPresent()) {
-			return "[{msg:'Usuário não encontrado']}";
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Solicitação inválida");
 		}
 		ur.deleteById(id);
-		return "[{msg:'Usuário apagado']}";
+		return ResponseEntity.status(HttpStatus.OK).body("Usuário Apagado!");
 	}
+	
+	@PostMapping("/login")
+	public ResponseEntity<?> login(@RequestBody Usuario user) {
+		
+		Usuario u = ur.findByNomeusuario(user.getNomeusuario(),user.getSenha());
+		if (u == null) {
+			return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Solicitação inválida");
+		} else {
+		return ResponseEntity.status(HttpStatus.OK).body("Logado!");
+		}
+	}
+	@PostMapping("/auth")
+	public ResponseEntity auth(@RequestBody Usuario user) {
+		Usuario u = ur.findByNomeusuario(user.getNomeusuario(),user.getSenha());
+		if (u ==null) {
+			return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Nome de usuário ou senha incorretos");
+		}
+		return	ResponseEntity.status(HttpStatus.OK).body("[idusuario:'"+u.getIdusuario()+","+"'"+"nomeusuario;'"+u.getNomeusuario()+"',"+"foto:'"+u.getFoto()+"}]");}
 	
 }
